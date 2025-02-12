@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<!-- Ali Hamza Azam 22I-2126 | CS-A -->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculator</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="A simple calculator">
+  <meta name="theme-color" content="#838383">
+</head>
+
+<body>
+
+  <div class="calculator">
+    <div class="display">0</div>
+    <div class="buttons">
+      <button class="clear">AC</button>
+      <button class="operator">Trig</button>
+      <button class="operator">^/√</button>
+      <button class="delete">&larr;</button>
+
+      <button class="number">7</button>
+      <button class="number">8</button>
+      <button class="number">9</button>
+      <button class="operator">+/−</button>
+
+      <button class="number">4</button>
+      <button class="number">5</button>
+      <button class="number">6</button>
+      <button class="operator">×/÷</button>
+
+      <button class="number">1</button>
+      <button class="number">2</button>
+      <button class="number">3</button>
+      <button class="equals">=</button>
+
+      <button class="number">0</button>
+      <button class="number">.</button>
+      <button class="operator">%</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      let display = document.querySelector(".display");
+      let buttons = document.querySelectorAll(".buttons button");
+      let expression = "";
+
+      buttons.forEach(button => {
+        button.addEventListener("click", () => {
+          let value = button.innerHTML;
+
+          if (button.classList.contains("number")) {
+            appendNumber(value);
+          } else if (button.classList.contains("operator")) {
+            if (value === "Trig") {
+              toggleTrig();
+            } else if (value === "^/√") {
+              togglePowerOperator();
+            } else if (value === "+/−") {
+              toggleSignOperator();
+            } else if (value === "×/÷") {
+              toggleMultiplyDivideOperator();
+            } else if (value === "%") {
+              percentage();
+            } else {
+              appendOperator(value);
+            }
+          } else if (button.classList.contains("clear")) {
+            clearDisplay();
+          } else if (button.classList.contains("equals")) {
+            calculate();
+          } else {
+            deleteLastChar();
+          }
+        });
+      });
+
+      function toggleTrig() {
+        const trigFunctions = ["cos(", "sin(", "tan("];
+        let currentIndex = -1;
+        let innerExpr = expression;
+
+        for (let i = 0; i < trigFunctions.length; i++) {
+          if (expression.startsWith(trigFunctions[i]) && expression.endsWith(")")) {
+            currentIndex = i;
+            innerExpr = expression.slice(trigFunctions[i].length, -1);
+            break;
+          }
+        }
+
+        const nextIndex = (currentIndex + 1) % trigFunctions.length;
+        expression = trigFunctions[nextIndex] + innerExpr + ")";
+
+        const openCount = (expression.match(/\(/g) || []).length;
+        const closeCount = (expression.match(/\)/g) || []).length;
+        if (closeCount > openCount) {
+          expression = expression.slice(0, expression.length - (closeCount - openCount));
+        }
+
+        updateDisplay();
+      }
+
+      function togglePowerOperator() {
+        if (expression.includes("^")) {
+          expression = expression.replace("^", "√");
+        } else if (expression.includes("√")) {
+          expression = expression.replace("√", "");
+        } else {
+          expression += "^";
+        }
+        updateDisplay();
+      }
+
+      function toggleSignOperator() {
+        if (expression.includes("+")) {
+          expression = expression.replace("+", "-");
+        } else if (expression.includes("-")) {
+          expression = expression.replace("-", "");
+        } else {
+          expression += "+";
+        }
+        updateDisplay();
+      }
+
+      function toggleMultiplyDivideOperator() {
+        if (expression.includes("×")) {
+          expression = expression.replace("×", "÷");
+        } else if (expression.includes("÷")) {
+          expression = expression.replace("÷", "");
+        } else {
+          expression += "×";
+        }
+        updateDisplay();
+      }
+
+      function percentage() {
+        expression = expression / 100;
+        updateDisplay();
+      }
+
+      function clearDisplay() {
+        expression = "";
+        updateDisplay();
+      }
+
+      function deleteLastChar() {
+        if (expression === "Error") {
+          expression = "";
+        } else if (expression.startsWith("cos(") ||
+          expression.startsWith("sin(") ||
+          expression.startsWith("tan(")) {
+          expression = expression.slice(4, -1);
+        } else if (expression.length === 1) {
+          expression = "0";
+        } else {
+          expression = expression.slice(0, -1);
+        }
+        updateDisplay();
+      }
+
+      function calculate() {
+        try {
+          let calcExpression = expression
+            .replace(/×/g, "*")
+            .replace(/÷/g, "/")
+            .replace(/\^/g, "**")
+            .replace(/√/g, "Math.sqrt(")
+            .replace(/cos\(/g, "Math.cos(")
+            .replace(/sin\(/g, "Math.sin(")
+            .replace(/tan\(/g, "Math.tan(");
+
+          const openCount = (calcExpression.match(/\(/g) || []).length;
+          const closeCount = (calcExpression.match(/\)/g) || []).length;
+          const missingParens = openCount - closeCount;
+          if (missingParens > 0) {
+            calcExpression += ")".repeat(missingParens);
+          }
+
+          const result = new Function(`return ${calcExpression}`)();
+
+          expression = Number(result.toFixed(10)).toString();
+        } catch (error) {
+          expression = "Error";
+        }
+        updateDisplay();
+      }
+
+      function appendNumber(number) {
+        if (expression === "0" || expression === "Error") {
+          expression = number;
+        } else {
+          expression += number;
+        }
+        updateDisplay();
+      }
+
+      function appendOperator(operator) {
+        const lastChar = expression.slice(-1);
+        const operators = ["+", "-", "×", "÷", "^"];
+
+        if (expression === "Error") {
+          expression = "0";
+        }
+
+        if (!operators.includes(lastChar)) {
+          expression += operator;
+          updateDisplay();
+        }
+      }
+
+      function updateDisplay() {
+        if (display.innerHTML === "Error" || display.innerHTML === "Infinity" || display.innerHTML === "NaN") {
+          expression = "0";
+        }
+        display.innerHTML = expression || "0";
+        if (display.innerHTML.length > 10) {
+          display.innerHTML = Number(display.innerHTML).toPrecision(10);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
